@@ -1,39 +1,27 @@
-from DAQ.daq import daq_instance
 
-import time
+# for DAQ
+import nidaqmx
+# computational vision librarie
 import cv2
-import numpy as np
-import threading
+# to use mediapipe solutions
 import mediapipe as mp
+# to work with trigonometrycs
+import numpy as np 
+# some time calculations
+import time
+# connect with mysql database
+import threading  # Importa la biblioteca threading
 
-
-mp_drawing = mp.solutions.drawing_utils
-mp_pose = mp.solutions.pose
+detener_daq_thread = False
 
 def modelo():
-    # Video 
-    # rep count 
-    cont_SEW_l = 0
-    cont_SEW_r = 0
-    cont = 0 
-    # rep stage
-    stage = None
-    correct_pose = False
-    bandera_timer = False
-    serie2 = False
-    serie1 = True
 
-    # angle arrays
-    left_sew_angles = []
-    right_sew_angles = []
-    left_hse_angles = []
-    right_hse_angles = []
+    # to use drawing utils
+    mp_drawing = mp.solutions.drawing_utils
+    # to use pose utils (most specifically pose estimation)
+    mp_pose = mp.solutions.pose
 
-    # emg values arrays
-    data_channel1 = [] 
-    data_channel2 = [] 
-    data_channel3 = []
-
+    
 
     # defining a function to calculate the angle between joints 
     def calculate_angles(first, middle, last):
@@ -54,6 +42,51 @@ def modelo():
         
         return angle
 
+    def daq_thread_instance():
+
+        global detener_daq_thread
+
+        with nidaqmx.Task() as task:
+            task.ai_channels.add_ai_voltage_chan("Dev1/ai0:2")
+            task.timing.cfg_samp_clk_timing(rate=2000.0)
+            
+            
+            while not detener_daq_thread:
+                data = task.read(number_of_samples_per_channel=1)
+                
+                data_channel1.append(data[0][0])
+                data_channel2.append(data[1][0])
+                data_channel3.append(data[2][0])
+
+
+    # Función para detener el hilo de adquisición de datos
+    def stop_daq_thread():
+        global detener_daq_thread
+        detener_daq_thread = True
+
+
+    # Video 
+    # rep count 
+    cont_SEW_l = 0
+    cont_SEW_r = 0
+
+    correct_pose = False
+    serie1 = True
+
+    # angle arrays
+    left_sew_angles = []
+    right_sew_angles = []
+    left_hse_angles = []
+    right_hse_angles = []
+
+    data_channel1 = []
+    data_channel2 = []
+    data_channel3 = []
+
+    bandera_inicio = True
+
+
+
     # the camera assigned to a variable '(number x) represents the no. of device'
 
     # # to use computer's camera 
@@ -62,24 +95,8 @@ def modelo():
     # to use Alan's camera
     cap = cv2.VideoCapture(0)
 
-    # Definir la resolución deseada
-    width = 320  
-    height = 240  
-
-    # Define the desired resolution
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-
     # Setup mediapipe instance 
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
-
-        try:
-            inicio_daq = time.time()
-            DAQ_thread_instance = threading.Thread(target= daq_instance())
-            DAQ_thread_instance.start()
-            
-        except:
-            print("chale :(")
 
 
         while cap.isOpened():
@@ -218,8 +235,6 @@ def modelo():
                     cv2.putText(image, text, (x, y + text_size[1]), 
                                 font, font_scale, (255, 255, 255), thickness, cv2.LINE_AA)
 
-            
-
                 # Curl count
 
                 # Make sure the body is on a correct pose for the states
@@ -228,22 +243,39 @@ def modelo():
                     if angle_HSE_left >= 80 and angle_HSE_left <= 120:
                         if angle_SEW_right >= 155 and angle_SEW_right <= 180:
                             if angle_SEW_left >= 155  and angle_SEW_left <= 180:
-                                stage = 'Correcto'
+                                
                                 correct_pose = True
-                                if cont_SEW_l <= 0 and cont_SEW_r <= 0:
+                                    
+                                if cont_SEW_l <= 0 and cont_SEW_r <= 0 and bandera_inicio:
+                                    try:
+                                        start_daq_time = time.time()
+                                        DAQ_thread_instance = threading.Thread(target= daq_thread_instance)
+                                        DAQ_thread_instance.start()
+                                        bandera_inicio = False
+                                        
+                                    except:
+                                        print("chale :(")
+
                                     start_time = time.time()
                                     print("comienza la serie ")
                                     pass
-                                
-                    
-                # Make sure the arm is flexed
-            
+
+                # Saving angles        
+                if correct_pose and serie1:
+                    # saving angles into arrays
+                    left_sew_angles.append(angle_SEW_left)
+                    right_sew_angles.append(angle_SEW_right)
+                    left_hse_angles.append(angle_HSE_left)
+                    right_hse_angles.append(angle_HSE_right)   
+                
+
                 # Curl count
                 if angle_SEW_left < 70 and angle_HSE_left >= 80 and correct_pose:
                     stage_sew_l = 'Down'
                 if angle_SEW_left > 84 and stage_sew_l == 'Down' and angle_HSE_left >= 80:
                     stage_sew_l = 'Up'
                     cont_SEW_l += 1
+                    print(F"{cont_SEW_l}")
                 
 
                 if angle_SEW_right < 70 and angle_HSE_right >= 80 and correct_pose:
@@ -252,22 +284,11 @@ def modelo():
                     stage_sew_r = 'Up'
                     cont_SEW_r += 1
                 
-
-
-                if correct_pose and serie1:
-                    # saving angles into arrays
-                    left_sew_angles.append(angle_SEW_left)
-                    right_sew_angles.append(angle_SEW_right)
-                    left_hse_angles.append(angle_HSE_left)
-                    right_hse_angles.append(angle_HSE_right)
-
-                    
-
+                
                 # to know the end of a series
                 if cont_SEW_r == 12 or cont_SEW_l == 12:
-                    stage = None
+                    
                     correct_pose = False
-                    bandera_timer = True
                     final_time = time.time()
                     
                     # restart reps counters
@@ -275,92 +296,16 @@ def modelo():
                     cont_SEW_l = 0
 
                     # upload data into a MySQL database
-                    if serie2:
-                        pass
-
-                    elif serie1:
-                        # print(f"len DAQ: {len(data_channel1)}")
+                    if serie1:
+                        # Función para detener el hilo de adquisición de datos
+                        stop_daq_thread()
+                        print(f"len DAQ: {len(data_channel1)}")
                         print(f"len angulos: {len(left_hse_angles)} ")
                         print(f"Tiempo de la serie: {final_time - start_time}")
-                        print(f"Tiempo de la DAQ: {final_time - inicio_daq}")
-                        break
-
-
-                
-                if bandera_timer is True:
-                    clock_start_time = time.time()
-                    elapsed_time = 0
-                    
-
-                    if serie2:
-                        while elapsed_time < 60:
-                            elapsed_time = time.time() - clock_start_time
-                            time_left = int(60 - elapsed_time)
-                        # End of the program message
-
-                            # Set font and text for the second message
-                            text2 = "Gracias por tu participacion!!"
-                            text_size2, _ = cv2.getTextSize(text2, font, font_scale, thickness)
-
-                            # Calculate coordinates for background rectangle for the second message
-                            x2 = int((image.shape[1] - text_size2[0]) / 2)
-                            y2 = bg_rect[1] + bg_rect[3] + padding
-                            w2 = text_size2[0]
-                            h2 = text_size2[1]
-                            bg_rect2 = (x2 - padding, y2 - padding, w2 + 2 * padding, h2 + 2 * padding)
-                            # black backgound for the timer
-                            black_image = np.zeros_like(image)
-                            # Draw background rectangle and text for the second message
-                            cv2.rectangle(black_image, bg_rect2, (0, 255, 0), -1, cv2.LINE_AA)
-                            cv2.putText(black_image, text2, (x2, y2 + text_size2[1]), 
-                                        font, font_scale, (255, 255, 255), thickness, cv2.LINE_AA)
-                            
-                            cv2.imshow('MediaPipe Feed', black_image)
-                            cv2.waitKey(1)
-                            bandera_timer = False
-                            # to close down our video feed 
-                            if cv2.waitKey(10) & 0xFF == ord('E'):
-                                break
-
-                    else:
-                        # ---- Timer -----
-                        while elapsed_time < 60:
-                            serie2 = True
-                            elapsed_time = time.time() - clock_start_time
-                            time_left = int(60 - elapsed_time)
-                            
-                            # Calculate coordinates for background rectangle
-                            x = int((image.shape[1] - text_size[0]) / 2)
-                            y = int((image.shape[0] - text_size[1]) / 2)
-                            w = text_size[0]
-                            h = text_size[1]
-                            padding = 10
-                            bg_rect = (x - padding, y - padding, w + 2 * padding, h + 2 * padding)
-                            # black backgound for the timer
-                            black_image = np.zeros_like(image)
-                            # Draws a red rectangle for the timer
-                            cv2.rectangle(black_image, bg_rect, (0, 0, 255), -1, cv2.LINE_AA)
-                            # timer
-                            cv2.putText(black_image, f'Fin Serie 1, Descanso: {time_left} s', (x, y + text_size[1]), 
-                                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-                            
-                            cv2.imshow('MediaPipe Feed', black_image)
-                            cv2.waitKey(1)
-                            
-                            bandera_timer = False
-                            stage = None
-                            # to close down our video feed 
-                            if cv2.waitKey(10) & 0xFF == ord('E'):
-                                break
-                    
-                
+                        print(f"Tiempo de la DAQ: {final_time - start_daq_time}")
 
             except:
                 pass
-
-            
-
-
 
             # Render my detections - Draws the landmarks and the connections on the image.
             mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
@@ -381,3 +326,4 @@ def modelo():
         cap.release()
         # I think it's kinda obvious what this does 
         cv2.destroyAllWindows()
+
