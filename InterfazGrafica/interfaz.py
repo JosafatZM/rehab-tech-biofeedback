@@ -93,8 +93,10 @@ class DataBaseFrame(ctk.CTkFrame):
         self.logo_image = ctk.CTkLabel(self, text="", image=self.logo)
         self.logo_image.grid(row=0, column=0, padx=20, pady=10)
 
-        self.button = ctk.CTkButton(self, text="Consult", command= objeto_funciones.ventanas_respaldo, hover_color="#00090b", fg_color="#081016")
+        self.button = ctk.CTkButton(self, text="Consultar", command= objeto_funciones.ventanas_respaldo, hover_color="#00090b", fg_color="#081016")
         self.button.grid(row=1, column=0, padx=20, pady=10)
+        self.button = ctk.CTkButton(self, text="Exportar", command= objeto_funciones.ventanas_respaldo, hover_color="#00090b", fg_color="#081016")
+        self.button.grid(row=2, column=0, padx=20, pady=10)
 
 class App(ctk.CTk):
     def __init__(self):
