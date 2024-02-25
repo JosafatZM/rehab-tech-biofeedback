@@ -2,7 +2,8 @@ import customtkinter as ctk
 import threading
 import os
 from PIL import Image
-from MediaPipe.modelo import modelo
+
+from Modelo_Daq.main import modelo_daq
 
 class FuncionesPrograma:
 
@@ -77,7 +78,7 @@ class HomeFrame(ctk.CTkFrame):
     # creates the video thread object
     def video(self):
         
-        video_thread_instance = threading.Thread(target= modelo)
+        video_thread_instance = threading.Thread(target= modelo_daq)
         video_thread_instance.start()
 
 class DataBaseFrame(ctk.CTkFrame):
