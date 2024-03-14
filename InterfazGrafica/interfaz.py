@@ -4,7 +4,7 @@ import os
 from PIL import Image
 
 from Modelo_Daq.main import modelo_daq
-from InterfazGrafica.scrollable_window import ConsultFrame
+from InterfazGrafica.ventana_consulta import ConsultFrame
 
 class FuncionesPrograma:
 
