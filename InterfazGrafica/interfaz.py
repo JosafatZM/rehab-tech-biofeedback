@@ -4,6 +4,7 @@ import os
 from PIL import Image
 
 from Modelo_Daq.main import modelo_daq
+from InterfazGrafica.scrollable_window import ConsultFrame
 
 class FuncionesPrograma:
 
@@ -94,7 +95,7 @@ class DataBaseFrame(ctk.CTkFrame):
         self.logo_image = ctk.CTkLabel(self, text="", image=self.logo)
         self.logo_image.grid(row=0, column=0, padx=20, pady=10)
 
-        self.button = ctk.CTkButton(self, text="Consultar", command= objeto_funciones.ventanas_respaldo, hover_color="#00090b", fg_color="#081016")
+        self.button = ctk.CTkButton(self, text="Consultar", command= ConsultFrame, hover_color="#00090b", fg_color="#081016")
         self.button.grid(row=1, column=0, padx=20, pady=10)
         self.button = ctk.CTkButton(self, text="Exportar", command= objeto_funciones.ventanas_respaldo, hover_color="#00090b", fg_color="#081016")
         self.button.grid(row=2, column=0, padx=20, pady=10)
