@@ -5,6 +5,7 @@ from PIL import Image
 
 from Modelo_Daq.main import modelo_daq
 from InterfazGrafica.ventana_consulta import ConsultFrame
+from InterfazGrafica.ventana_registros import RegistFrame
 
 class FuncionesPrograma:
 
@@ -75,6 +76,9 @@ class HomeFrame(ctk.CTkFrame):
 
         self.model_button = ctk.CTkButton(self, text="Model", command=self.video, hover_color="#00090b", fg_color="#081016")
         self.model_button.grid(row=1, column=0, padx=20, pady=10)
+
+        self.model_button = ctk.CTkButton(self, text="Registro", command=RegistFrame, hover_color="#00090b", fg_color="#081016") 
+        self.model_button.grid(row=2, column=0, padx=20, pady=10)
 
     # creates the video thread object
     def video(self):
