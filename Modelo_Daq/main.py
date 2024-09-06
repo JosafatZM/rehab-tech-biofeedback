@@ -1,7 +1,6 @@
-from .calculate_pose.pose_utils import calculate_angles
-from .visualization.visualization import draw_landmarks, display_image
-from .data_aqcuisition import data_aqcuisition as daq
-
+import nidaqmx
+# to work with data strutures
+import pandas as pd
 # computational vision librarie
 import cv2
 # to use mediapipe solutions
@@ -10,41 +9,76 @@ import mediapipe as mp
 import numpy as np 
 # some time calculations
 import time
+# graphs 
+import matplotlib.pyplot as plt
 # connect with mysql database
-
+import threading  # Importa la biblioteca threading
 
 def modelo_daq():
-
-    data_channel1 = []
-    data_channel2 = []
-    data_channel3 = []
-
-    data_emg = daq.DAQ(channel1= data_channel1,
-                    channel2= data_channel2,
-                    channel3= data_channel3)
 
     # to use drawing utils
     mp_drawing = mp.solutions.drawing_utils
     # to use pose utils (most specifically pose estimation)
     mp_pose = mp.solutions.pose
 
-    # Video 
-    # rep count 
-    cont_SEW_l = 0
+    detener_daq_thread = False
+
+    # defining a function to calculate the angle between joints 
+    def calculate_angles(first, middle, last):
+        first = np.array(first)
+        middle = np.array(middle)
+        last = np.array(last)
+
+        # coordinates_array [x, y, z]
+        # coordinates_array[0] = x
+        # coordinates_array[1] = y
+        # coordinates_array[2] = z
+
+        radians = np.arctan2(last[1] - middle[1], last[0] - middle[0]) - np.arctan2(first[1] - middle[1], first[0] - middle[0])
+        angle = np.abs( radians * 180 / np.pi)
+
+        if angle > 180.0:
+            angle = 360 - angle
+        
+        return round(angle, 3)
+
+
+    def daq_thread_instance():
+
+        global detener_daq_thread
+
+        with nidaqmx.Task() as task:
+            task.ai_channels.add_ai_voltage_chan("Dev1/ai0")
+            task.timing.cfg_samp_clk_timing(rate=2000.0)
+            
+            
+            while not detener_daq_thread:
+                data = task.read(number_of_samples_per_channel=1)
+            
+                data_channel1.append(data[0])
+
+    # Función para detener el hilo de adquisición de datos
+    def stop_daq_thread():
+        global detener_daq_thread
+        detener_daq_thread = True
+
+    
+
     cont_SEW_r = 0
-
-    correct_pose = False
-    serie1 = True
-
-    # angle arrays
-    left_sew_angles = []
-    right_sew_angles = []
-    left_hse_angles = []
-    right_hse_angles = []
-
-
-
-    bandera_inicio = True
+    cont = 0 
+    stage = None
+    bandera = False
+    bandera_timer = False
+    data_channel1 = []
+    bandera_time = 0
+    relacion_ang_time_codo = {}
+    relacion_ang_time_hombro = {}
+    # Set font and text
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 1
+    thickness = 2
+    text = "hola"
+    text_size, _ = cv2.getTextSize(text, font, font_scale, thickness)
 
 
 
@@ -58,9 +92,9 @@ def modelo_daq():
 
     # Setup mediapipe instance 
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
-
-
         while cap.isOpened():
+            global final_ad
+            final_ad = False
             
             # camera feedback
             ret, frame = cap.read()
@@ -82,33 +116,10 @@ def modelo_daq():
             # LandMarks
             try:
                 landmarks = results.pose_landmarks.landmark
-                
 
                 # # ----- COORDINATES ------
 
-                # Hip, Shoulder, Elbow Left angle
-
-                # creating this variables to pass them as arguments in the function below
-                hip = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x, 
-                    landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y]
-                
-                shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x , 
-                            landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
-                
-                elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x, 
-                        landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
-                
-                # calculate angle 
-                angle_HSE_left = calculate_angles(hip, shoulder, elbow)
-
-                # pop-up angle
-                cv2.putText(image, str(round(angle_HSE_left, 2)),
-                            tuple(np.multiply(shoulder, [640, 480]).astype(int)),
-                            cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0), 1,cv2.LINE_AA
-                            )
-                
                 # Hip, Shoulder, Elbow Right angle
-
                 # creating this variables to pass them as arguments in the function below
                 hip = [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x, 
                     landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
@@ -119,39 +130,16 @@ def modelo_daq():
                 elbow = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x, 
                         landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y]
                 
-                # calculate angle 
+                # calculate angle function
                 angle_HSE_right = calculate_angles(hip, shoulder, elbow)
 
-                #pop-up angle
+                # pop-up angle
                 cv2.putText(image, str(round(angle_HSE_right, 2)),
                             tuple(np.multiply(shoulder, [640, 480]).astype(int)),
                             cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0), 1,cv2.LINE_AA
                             )
                 
-
-                # Shoulder, Elbow, Wrist Left angle
-
-                # creating this variables to pass them as arguments in the function below
-                shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x , 
-                            landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
-                
-                elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x, 
-                        landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
-                
-                wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x, 
-                        landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
-
-                # calculate angle 
-                angle_SEW_left = calculate_angles(shoulder, elbow, wrist)
-
-                # pop-up angle
-                cv2.putText(image, str(round(angle_SEW_left, 2)),
-                            tuple(np.multiply(elbow, [640, 480]).astype(int)),
-                            cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0), 1,cv2.LINE_AA
-                            )
-                
                 # Shoulder, Elbow, Wrist Right angle
-
                 # creating this variables to pass them as arguments in the function below
                 shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x , 
                             landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
@@ -162,7 +150,7 @@ def modelo_daq():
                 wrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x, 
                         landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
 
-                # calculate angle 
+                # calculate angle function
                 angle_SEW_right = calculate_angles(shoulder, elbow, wrist)
 
                 # pop-up angle
@@ -170,111 +158,146 @@ def modelo_daq():
                             tuple(np.multiply(elbow, [640, 480]).astype(int)),
                             cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0), 1,cv2.LINE_AA
                             )
-            
-
-                # Check condition and display pop-up for posture 
-                if angle_HSE_right < 80 or angle_HSE_left < 80:
-                    # Set font and text
-                    font = cv2.FONT_HERSHEY_SIMPLEX
-                    text = "Coloca una postura adecuada"
-                    font_scale = 1
-                    thickness = 2
-
-                    # Get text size
-                    text_size, _ = cv2.getTextSize(text, font, font_scale, thickness)
-
-                    # Calculate coordinates for background rectangle
-                    x = int((image.shape[1] - text_size[0]) / 2)
-                    y = int((image.shape[0] - text_size[1]) / 2)
-                    w = text_size[0]
-                    h = text_size[1]
-                    padding = 10
-                    bg_rect = (x - padding, y - padding, w + 2 * padding, h + 2 * padding)
-
-                    # Draw background rectangle and text
-                    cv2.rectangle(image, bg_rect, (0, 0, 255), -1, cv2.LINE_AA)
-                    cv2.putText(image, text, (x, y + text_size[1]), 
-                                font, font_scale, (255, 255, 255), thickness, cv2.LINE_AA)
 
                 # Curl count
-
                 # Make sure the body is on a correct pose for the states
+                if angle_HSE_right >= 80 and angle_HSE_right <= 120:           
+                    if angle_SEW_right >= 155 and angle_SEW_right <= 180:
+                        stage = 'Incial'
+                        bandera = True
+                        
+                                
+                if angle_HSE_right >= 80 and angle_HSE_right <= 120:
+                    if angle_SEW_right >= 131 and angle_SEW_right <= 154:
+                            
+                        if stage == 'Inicial':
+                            stage = 'Bajada'
+                        elif stage == 'Concentrica':
+                            stage = 'Subida'
+                                
 
                 if angle_HSE_right >= 80 and angle_HSE_right <= 120:
-                    if angle_HSE_left >= 80 and angle_HSE_left <= 120:
-                        if angle_SEW_right >= 155 and angle_SEW_right <= 180:
-                            if angle_SEW_left >= 155  and angle_SEW_left <= 180:
-                                
-                                correct_pose = True
-                                    
-                                if cont_SEW_l <= 0 and cont_SEW_r <= 0 and bandera_inicio:
-                                    try:
-                                        start_daq_time = time.time()
-                                        data_emg.daq_thread()
-                                        bandera_inicio = False
-                                        
-                                    except:
-                                        print("chale :(")
+                    if angle_SEW_right >= 30 and angle_SEW_right <= 130:
+                        
+                        stage = 'Concentrica'
 
-                                    start_time = time.time()
-                                    print("comienza la serie ")
-                                    pass
 
-                # Saving angles        
-                if correct_pose and serie1:
-                    # saving angles into arrays
-                    left_sew_angles.append(angle_SEW_left)
-                    right_sew_angles.append(angle_SEW_right)
-                    left_hse_angles.append(angle_HSE_left)
-                    right_hse_angles.append(angle_HSE_right)   
-                
-
-                # Curl count
-                if angle_SEW_left < 70 and angle_HSE_left >= 80 and correct_pose:
-                    stage_sew_l = 'Down'
-                if angle_SEW_left > 84 and stage_sew_l == 'Down' and angle_HSE_left >= 80:
-                    stage_sew_l = 'Up'
-                    cont_SEW_l += 1
-                    print(F"{cont_SEW_l}")
-                
-
-                if angle_SEW_right < 70 and angle_HSE_right >= 80 and correct_pose:
+                    
+                # Make sure the arm is flexed
+                if angle_SEW_right < 70 and angle_HSE_right >= 80 and bandera:
                     stage_sew_r = 'Down'
                 if angle_SEW_right > 84 and stage_sew_r == 'Down' and angle_HSE_right >= 80:
                     stage_sew_r = 'Up'
                     cont_SEW_r += 1
                 
+        
+
+                if bandera_time == 0:
+
+                    start_time = time.time()
+                    print('corriendo tiempo')
+                    bandera_time = bandera_time + 1
+
+                # screating an angle-time relation into a dict
+                relacion_ang_time_codo[round(time.time() - start_time, 3)] = angle_SEW_right
+                relacion_ang_time_hombro[round(time.time() - start_time, 3)] = angle_HSE_right
                 
                 # to know the end of a series
-                if cont_SEW_r == 12 or cont_SEW_l == 12:
-                    
-                    correct_pose = False
+                if cont_SEW_r == 12:
                     final_time = time.time()
+                    bandera_timer = True
+                    # calculate the duration of a series
+                    serie_time = final_time - start_time
+                    # save times into an array
+                    print(f'fin del tiempo, la serie duro: {serie_time}')
                     
-                    # restart reps counters
-                    cont_SEW_r = 0
-                    cont_SEW_l = 0
+                    # cargar_datos(left_hse_angles, right_hse_angles, left_sew_angles, 
+                    #              right_sew_angles, series_times[0] )
 
-                    # upload data into a MySQL database
-                    if serie1:
-                        # Función para detener el hilo de adquisición de datos
-                        data_emg.stop_daq_thread()
-                        print(f"len DAQ: {len(data_channel1)}")
-                        print(f"len angulos: {len(left_hse_angles)} ")
-                        print(f"Tiempo de la serie: {final_time - start_time}")
-                        print(f"Tiempo de la DAQ: {final_time - start_daq_time}")
-                        print(f"fs angulos: {len(left_hse_angles)/ (final_time - start_daq_time)}")
-                        break
+                
+                if bandera_timer is True:
+                    clock_start_time = time.time()
+                    elapsed_time = 0
+                    
+                    # ---- Timer -----
+                    while elapsed_time < 10:
+                        elapsed_time = time.time() - clock_start_time
+                        time_left = int(10 - elapsed_time)
+                        
+                        # Calculate coordinates for background rectangle
+                        x = int((image.shape[1] - text_size[0]) / 2)
+                        y = int((image.shape[0] - text_size[1]) / 2)
+                        w = text_size[0]
+                        h = text_size[1]
+                        padding = 10
+                        bg_rect = (x - padding, y - padding, w + 2 * padding, h + 2 * padding)
+                        # black backgound for the timer
+                        black_image = np.zeros_like(image)
+                        # Draws a red rectangle for the timer
+                        cv2.rectangle(black_image, bg_rect, (0, 0, 255), -1, cv2.LINE_AA)
+                        # timer
+                        cv2.putText(black_image, f'Descanso: {time_left} s', (x, y + text_size[1]), 
+                                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+                        
+                        cv2.imshow('MediaPipe Feed', black_image)
+                        cv2.waitKey(1)
+                        
+                        # to close down our video feed 
+                        if time_left == 1:
+                        
+                            final_ad = True
+                            print(final_ad)
+                            break
+                
+                
 
             except:
                 pass
 
-            draw_landmarks(image, results)
-            display_image(image)
+            # Render Curl Cont
+
+            # to draw a rectangle in our camera\ webcam window
+            # (image, coord sup left, coord inf right, color)
+            """
+            (0,0)                         (ancho, 0)
+                +-----------------------------+
+                |                             |
+                |                             |
+                |                             |
+                |                             |
+                |                             |
+                |                             |
+                |                             |
+                |                             |
+                |                             |
+                +-----------------------------+
+            (0, altura)                (ancho, altura)
+            """
+            cv2.rectangle(image, (0, 0), (100, 60), (255, 255, 255), -1)
+            # Rep & Stage data pop-up
+            # putText(img, text, org, fontFace, fontScale, color[, thickness[, lineType[, bottomLeftOrigin]]])
             
+            # Rep datA
+            cv2.putText(image, 'R-ARM-REPS', (20,55), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0,0,0), 1, cv2.LINE_AA)
+            cv2.putText(image, str(cont_SEW_r), 
+                        (40, 35), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 1,  (0,0,0), 2, cv2.LINE_AA)
+
+
+
+            # Render my detections - Draws the landmarks and the connections on the image.
+            mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+                                    mp_drawing.DrawingSpec(color=(0, 0, 255), thickness=2, circle_radius=2),
+                                    mp_drawing.DrawingSpec(color=(255, 255, 255), thickness=2, circle_radius=2)
+                                    )
+
+
+            # gives a pop-up of the camera 
+            cv2.imshow('MediaPipe Feed', image)
 
             # to close down our video feed 
-            if cv2.waitKey(10) & 0xFF == ord('E'):
+            if final_ad or cv2.waitKey(10) & 0xFF == ord('E'):
                 break
             # 0xFF is checking for what key we hit on our keyboard
 
@@ -282,3 +305,7 @@ def modelo_daq():
         cap.release()
         # I think it's kinda obvious what this does 
         cv2.destroyAllWindows()
+
+        print(f"fs angulos: {len(relacion_ang_time_codo) /serie_time}")
+
+    
