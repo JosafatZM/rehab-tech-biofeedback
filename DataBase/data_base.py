@@ -6,7 +6,7 @@ import datetime
 acceso_bd = {"host": "localhost",
              "user": "root",
              "password": "DataBase98_!",
-             "database": "pruebas"
+             "database": "data_modular"
 }
 
 # Obtener la ruta de la carpeta del proyecto
@@ -24,6 +24,7 @@ class BaseDatos:
         self.host = kwargs["host"]
         self.usuario = kwargs["user"]
         self.contrasena = kwargs["password"]
+        self.base_datos = kwargs["database"]
         self.conexion_cerrada = False
         print("Se inicializo la base de datos")
 
@@ -130,3 +131,14 @@ class BaseDatos:
             print("Se actualizó el registro correctamente.")
         except:
             print("Ocurrió un error al intentar actualizar el registro.")
+
+    def subir_datos(self, sql):
+        try:
+            # Se selecciona la base de datos
+            self.cursor.execute(f"USE {self.base_datos}")
+
+            self.cursor.execute(sql)
+            self.conector.commit()
+            print(f"\nSe registraron los datos!")
+        except Exception as e:
+            print(f"Ocurrió un error al intentar subir el registro: {e}")

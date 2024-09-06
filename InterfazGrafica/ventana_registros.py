@@ -80,13 +80,18 @@ class RegistFrame(ctk.CTkToplevel):
             edad = int(self.entrada_edad.get())
             lateralidad = self.entrada_lateralidad.get().title()
             
+            query = f"""
+                    INSERT INTO participantes (nombre, apellido, sexo, edad, lateralidad)
+                    VALUES ('{nombre}', '{apellido}', '{sexo}', {edad}, '{lateralidad}');
+                    """
+            base_datos.subir_datos(sql=query)
+
             print(f"Datos Registrados \n"
                   f"Nombre: {nombre}\n"
                   f"Apellido: {apellido}\n"
                   f"Sexo: {sexo}\n"
                   f"Edad: {edad}, DataType: {type(edad)}\n"
                   f"Lateralidad: {lateralidad}\n")
-        
         except:
             pass
         
