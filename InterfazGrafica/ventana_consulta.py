@@ -91,7 +91,7 @@ class ConsultFrame(ctk.CTkToplevel):
                 
                 busqueda = self.entrada_de_busqueda.get().title() 
 
-                query = f"SELECT nombre, apellidos FROM pruebas.sujetos WHERE nombre = '{busqueda}'"
+                query = f"SELECT nombre, apellido FROM data_modular.participantes WHERE nombre = '{busqueda}'"
 
                 self.resultado = base_datos.consulta(query)
 
