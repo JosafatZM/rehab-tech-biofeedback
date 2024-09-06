@@ -77,8 +77,8 @@ class HomeFrame(ctk.CTkFrame):
         self.model_button = ctk.CTkButton(self, text="Model", command=self.video, hover_color="#00090b", fg_color="#081016")
         self.model_button.grid(row=1, column=0, padx=20, pady=10)
 
-        self.model_button = ctk.CTkButton(self, text="Registro", command=RegistFrame, hover_color="#00090b", fg_color="#081016") 
-        self.model_button.grid(row=2, column=0, padx=20, pady=10)
+        self.registros_button = ctk.CTkButton(self, text="Registro", command=RegistFrame, hover_color="#00090b", fg_color="#081016") 
+        self.registros_button.grid(row=2, column=0, padx=20, pady=10)
 
     # creates the video thread object
     def video(self):
@@ -123,13 +123,8 @@ class App(ctk.CTk):
         self.logo_image = ctk.CTkImage(Image.open(os.path.join(image_path, "logo_modular.png")), size=(40, 40))
         self.large_test_image = ctk.CTkImage(Image.open(os.path.join(image_path, "imagen8.png")), size=(500, 150))
         self.large_test_image2 = ctk.CTkImage(Image.open(os.path.join(image_path, "base_datos.png")), size=(500, 150))
-        self.image_icon_image = ctk.CTkImage(Image.open(os.path.join(image_path, "image_icon_light.png")), size=(20, 20))
-        self.home_image = ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "home_dark.png")),
-                                                 dark_image=Image.open(os.path.join(image_path, "home_light.png")), size=(20, 20))
-        self.chat_image = ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "chat_dark.png")),
-                                                 dark_image=Image.open(os.path.join(image_path, "chat_light.png")), size=(20, 20))
-        self.add_user_image = ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "add_user_dark.png")),
-                                                     dark_image=Image.open(os.path.join(image_path, "add_user_light.png")), size=(20, 20))
+        self.home_image = ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "home_dark.png")), dark_image=Image.open(os.path.join(image_path, "home_light.png")), size=(20, 20))
+        self.add_user_image = ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "add_user_dark.png")), dark_image=Image.open(os.path.join(image_path, "add_user_light.png")), size=(20, 20))
         
 
         # Navigation Frame
