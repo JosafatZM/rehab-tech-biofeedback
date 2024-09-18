@@ -74,17 +74,17 @@ class HomeFrame(ctk.CTkFrame):
         self.logo_image = ctk.CTkLabel(self, text="", image=self.logo)
         self.logo_image.grid(row=0, column=0, padx=20, pady=10)
 
-        self.model_button = ctk.CTkButton(self, text="Model", command=self.video, hover_color="#00090b", fg_color="#081016")
-        self.model_button.grid(row=1, column=0, padx=20, pady=10)
+        # self.model_button = ctk.CTkButton(self, text="Model", command=self.video, hover_color="#00090b", fg_color="#081016")
+        # self.model_button.grid(row=1, column=0, padx=20, pady=10)
 
         self.registros_button = ctk.CTkButton(self, text="Registro", command=RegistFrame, hover_color="#00090b", fg_color="#081016") 
         self.registros_button.grid(row=2, column=0, padx=20, pady=10)
 
-    # creates the video thread object
-    def video(self):
+    # # creates the video thread object
+    # def video(self):
         
-        video_thread_instance = threading.Thread(target= modelo_daq)
-        video_thread_instance.start()
+    #     video_thread_instance = threading.Thread(target= modelo_daq)
+    #     video_thread_instance.start()
 
 class DataBaseFrame(ctk.CTkFrame):
 

@@ -210,6 +210,7 @@ def modelo_daq():
                     serie_time = final_time - start_time
                     # save times into an array
                     print(f'fin del tiempo, la serie duro: {serie_time}')
+                    print("datos subidos ...")
                     
                     # cargar_datos(left_hse_angles, right_hse_angles, left_sew_angles, 
                     #              right_sew_angles, series_times[0] )
@@ -246,7 +247,7 @@ def modelo_daq():
                         if time_left == 1:
                         
                             final_ad = True
-                            print(final_ad)
+                            
                             break
                 
                 

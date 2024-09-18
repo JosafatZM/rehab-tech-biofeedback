@@ -2,6 +2,8 @@ import customtkinter as ctk
 from tkinter.font import BOLD
 from DataBase.data_base import BaseDatos as bd
 from DataBase.data_base import acceso_bd
+import threading
+from Modelo_Daq.main import modelo_daq
 
 # para manipular la base de datos
 base_datos = bd(**acceso_bd)
@@ -21,25 +23,24 @@ class RegistFrame(ctk.CTkToplevel):
         self.resizable(False, False)
 
         # Create text
-        self.texto_nombre = ctk.CTkTextbox(self, width=90, corner_radius=5, height= 30)
-        self.texto_nombre.grid(row=1, column=1, padx=20, pady=5, sticky="ew")
-        self.texto_nombre.insert("0.0", "Nombre:" )
+        self.texto_nombre = ctk.CTkLabel(self, text="Nombre:", width=90, corner_radius=5)
+        self.texto_nombre.grid(row=1, column=1, padx=20, pady=5)
+        
+        self.texto_apellido = ctk.CTkLabel(self, text="Apellido:", width=90, corner_radius=5)
+        self.texto_apellido.grid(row=2, column=1, padx=20, pady=5)
+    
 
-        self.texto_apellido = ctk.CTkTextbox(self, width=90, corner_radius=5,height= 30)
-        self.texto_apellido.grid(row=2, column=1, padx=20, pady=5, sticky="ew")
-        self.texto_apellido.insert("0.0", "Apellido:" )
+        self.texto_sexo = ctk.CTkLabel(self, text="Sexo:", width=90, corner_radius=5)
+        self.texto_sexo.grid(row=3, column=1, padx=20, pady=5)
+      
 
-        self.texto_sexo = ctk.CTkTextbox(self, width=90, corner_radius=5,height= 30)
-        self.texto_sexo.grid(row=3, column=1, padx=20, pady=5, sticky="ew")
-        self.texto_sexo.insert("0.0", "Sexo:" )
+        self.texto_edad= ctk.CTkLabel(self, text="Edad:", width=90, corner_radius=5)
+        self.texto_edad.grid(row=4, column=1, padx=20, pady=5)
+    
 
-        self.texto_edad= ctk.CTkTextbox(self, width=90, corner_radius=5,height= 30)
-        self.texto_edad.grid(row=4, column=1, padx=20, pady=5, sticky="ew")
-        self.texto_edad.insert("0.0", "Edad:" )
-
-        self.texto_lateralidad = ctk.CTkTextbox(self, width=90, corner_radius=5,height= 30,activate_scrollbars=False)
-        self.texto_lateralidad.grid(row=5, column=1, padx=20, pady=5, sticky="ew")
-        self.texto_lateralidad.insert("0.0", "Lateralidad:" )
+        self.texto_lateralidad = ctk.CTkLabel(self, text="Lateralidad:", width=90, corner_radius=5)
+        self.texto_lateralidad.grid(row=5, column=1, padx=20, pady=5)
+        
         
         # Create entries
         self.entrada_nombre = ctk.CTkEntry(self, corner_radius=5, height= 30)
@@ -92,6 +93,12 @@ class RegistFrame(ctk.CTkToplevel):
                   f"Sexo: {sexo}\n"
                   f"Edad: {edad}, DataType: {type(edad)}\n"
                   f"Lateralidad: {lateralidad}\n")
+            
+            self.destroy()
+            
+            video_thread_instance = threading.Thread(target= modelo_daq)
+            video_thread_instance.start()
+
         except:
             pass
         
