@@ -47,15 +47,20 @@ def modelo_daq():
 
         global detener_daq_thread
 
-        with nidaqmx.Task() as task:
-            task.ai_channels.add_ai_voltage_chan("Dev1/ai0")
-            task.timing.cfg_samp_clk_timing(rate=2000.0)
-            
-            
-            while not detener_daq_thread:
-                data = task.read(number_of_samples_per_channel=1)
-            
-                data_channel1.append(data[0])
+        try:
+
+            with nidaqmx.Task() as task:
+                task.ai_channels.add_ai_voltage_chan("Dev1/ai0")
+                task.timing.cfg_samp_clk_timing(rate=2000.0)
+                
+                
+                while not detener_daq_thread:
+                    data = task.read(number_of_samples_per_channel=1)
+                
+                    data_channel1.append(data[0])
+
+        except:
+            print("error con la daq")
 
     # Función para detener el hilo de adquisición de datos
     def stop_daq_thread():
@@ -65,7 +70,8 @@ def modelo_daq():
     
 
     cont_SEW_r = 0
-    cont = 0 
+    start_daq_time = 0 
+    inicio_daq = True
     stage = None
     bandera = False
     bandera_timer = False
@@ -88,7 +94,7 @@ def modelo_daq():
     # cap = cv2.VideoCapture(0)
 
     # to use Alan's camera
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
 
     # Setup mediapipe instance 
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
@@ -161,40 +167,31 @@ def modelo_daq():
 
                 # Curl count
                 # Make sure the body is on a correct pose for the states
-                if angle_HSE_right >= 80 and angle_HSE_right <= 120:           
-                    if angle_SEW_right >= 155 and angle_SEW_right <= 180:
-                        stage = 'Incial'
-                        bandera = True
-                        
-                                
-                if angle_HSE_right >= 80 and angle_HSE_right <= 120:
-                    if angle_SEW_right >= 131 and angle_SEW_right <= 154:
-                            
-                        if stage == 'Inicial':
-                            stage = 'Bajada'
-                        elif stage == 'Concentrica':
-                            stage = 'Subida'
-                                
-
-                if angle_HSE_right >= 80 and angle_HSE_right <= 120:
-                    if angle_SEW_right >= 30 and angle_SEW_right <= 130:
-                        
-                        stage = 'Concentrica'
-
+                if bandera is not True:
+                    if angle_HSE_right >= 0 and angle_HSE_right <= 5:           
+                        if angle_SEW_right >= 165 and angle_SEW_right <= 180:
+                            bandera = True
+                            print('exito,podemos comenzar!')
 
                     
-                # Make sure the arm is flexed
-                if angle_SEW_right < 70 and angle_HSE_right >= 80 and bandera:
+                # Make sure the arm is extended 
+                if angle_SEW_right > 160 and angle_HSE_right >= 70 and bandera:
+                    stage_sew_r = 'Extended'
+                if angle_SEW_right > 165 and stage_sew_r == 'Extended' and angle_HSE_right < 20:
                     stage_sew_r = 'Down'
-                if angle_SEW_right > 84 and stage_sew_r == 'Down' and angle_HSE_right >= 80:
-                    stage_sew_r = 'Up'
                     cont_SEW_r += 1
                 
-        
 
                 if bandera_time == 0:
-
                     start_time = time.time()
+                    try:
+                        DAQ_thread_instance = threading.Thread(target= daq_thread_instance)
+                        DAQ_thread_instance.start()
+                        start_daq_time = time.time()
+
+                    except:
+                        print("error en inicializacion del hilo para DAQ")
+                    
                     print('corriendo tiempo')
                     bandera_time = bandera_time + 1
 
@@ -205,11 +202,13 @@ def modelo_daq():
                 # to know the end of a series
                 if cont_SEW_r == 12:
                     final_time = time.time()
+                    stop_daq_thread()
                     bandera_timer = True
                     # calculate the duration of a series
                     serie_time = final_time - start_time
+                    daq_time = final_time - start_daq_time
                     # save times into an array
-                    print(f'fin del tiempo, la serie duro: {serie_time}')
+                    print(f'fin del tiempo, la serie duro: {serie_time}, Daq time: {daq_time}')
                     print("datos subidos ...")
                     
                     # cargar_datos(left_hse_angles, right_hse_angles, left_sew_angles, 
@@ -284,6 +283,12 @@ def modelo_daq():
             cv2.putText(image, str(cont_SEW_r), 
                         (40, 35), 
                         cv2.FONT_HERSHEY_SIMPLEX, 1,  (0,0,0), 2, cv2.LINE_AA)
+            # Stage data
+            cv2.putText(image, 'STAGE', (60, 55), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.3,  (0,0,0), 1, cv2.LINE_AA)
+            cv2.putText(image, stage, 
+                        (80,35), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
 
 
 
