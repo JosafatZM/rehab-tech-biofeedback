@@ -175,8 +175,9 @@ def modelo_daq():
 
                     
                 # Make sure the arm is extended 
-                if angle_SEW_right > 160 and angle_HSE_right >= 70 and bandera:
-                    stage_sew_r = 'Extended'
+                if angle_HSE_right <= 5 and angle_HSE_right >= 0:           
+                    if angle_SEW_right >= 85 and angle_SEW_right <= 105:
+                        stage_sew_r = 'Extended'
                 if angle_SEW_right > 165 and stage_sew_r == 'Extended' and angle_HSE_right < 20:
                     stage_sew_r = 'Down'
                     cont_SEW_r += 1
