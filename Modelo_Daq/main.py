@@ -13,6 +13,12 @@ import time
 import matplotlib.pyplot as plt
 # connect with mysql database
 import threading  # Importa la biblioteca threading
+import json
+from DataBase.data_base import BaseDatos as bd
+from DataBase.data_base import acceso_bd
+# para manipular la base de datos
+base_datos = bd(**acceso_bd)
+
 
 def modelo_daq():
 
@@ -20,8 +26,6 @@ def modelo_daq():
     mp_drawing = mp.solutions.drawing_utils
     # to use pose utils (most specifically pose estimation)
     mp_pose = mp.solutions.pose
-
-    detener_daq_thread = False
 
     # defining a function to calculate the angle between joints 
     def calculate_angles(first, middle, last):
@@ -46,19 +50,18 @@ def modelo_daq():
     def daq_thread_instance():
 
         global detener_daq_thread
+        detener_daq_thread = False
 
         try:
-
             with nidaqmx.Task() as task:
                 task.ai_channels.add_ai_voltage_chan("Dev1/ai0")
                 task.timing.cfg_samp_clk_timing(rate=2000.0)
-                
                 
                 while not detener_daq_thread:
                     data = task.read(number_of_samples_per_channel=1)
                 
                     data_channel1.append(data[0])
-
+            print("Daq correcto")
         except:
             print("error con la daq")
 
@@ -67,7 +70,22 @@ def modelo_daq():
         global detener_daq_thread
         detener_daq_thread = True
 
-    
+    def registrar(datos):
+
+        datos = json.dumps(data_channel1)
+        # Consulta SQL con placeholder (%s)
+        query = "INSERT INTO datos_emg (emg) VALUES (%s)"
+
+        # Ejecutar el método con la consulta y el valor del JSON
+        try:
+            base_datos.subir_datos(sql=query, params=(datos,))
+            print("Registro subido con éxito")
+        except Exception as e:
+            print("Error al intentar subir el registro:", e)
+
+        
+        
+
 
     cont_SEW_r = 0
     start_daq_time = 0 
@@ -168,7 +186,7 @@ def modelo_daq():
                 # Curl count
                 # Make sure the body is on a correct pose for the states
                 if bandera is not True:
-                    if angle_HSE_right >= 0 and angle_HSE_right <= 5:           
+                    if angle_HSE_right >= 0 and angle_HSE_right <= 10:           
                         if angle_SEW_right >= 165 and angle_SEW_right <= 180:
                             bandera = True
                             print('exito,podemos comenzar!')
@@ -178,7 +196,7 @@ def modelo_daq():
                 if angle_HSE_right <= 5 and angle_HSE_right >= 0:           
                     if angle_SEW_right >= 85 and angle_SEW_right <= 105:
                         stage_sew_r = 'Extended'
-                if angle_SEW_right > 165 and stage_sew_r == 'Extended' and angle_HSE_right < 20:
+                if angle_SEW_right >= 130 and stage_sew_r == 'Extended' and angle_HSE_right < 20:
                     stage_sew_r = 'Down'
                     cont_SEW_r += 1
                 
@@ -208,14 +226,13 @@ def modelo_daq():
                     # calculate the duration of a series
                     serie_time = final_time - start_time
                     daq_time = final_time - start_daq_time
+
                     # save times into an array
                     print(f'fin del tiempo, la serie duro: {serie_time}, Daq time: {daq_time}')
-                    print("datos subidos ...")
-                    
-                    # cargar_datos(left_hse_angles, right_hse_angles, left_sew_angles, 
-                    #              right_sew_angles, series_times[0] )
-
+                    print("subiendo datos... \n")
+                    registrar(data_channel1)
                 
+                    
                 if bandera_timer is True:
                     clock_start_time = time.time()
                     elapsed_time = 0
