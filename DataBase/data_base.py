@@ -132,12 +132,17 @@ class BaseDatos:
         except:
             print("Ocurrió un error al intentar actualizar el registro.")
 
-    def subir_datos(self, sql):
+    def subir_datos(self, sql, params=None):
         try:
             # Se selecciona la base de datos
             self.cursor.execute(f"USE {self.base_datos}")
 
-            self.cursor.execute(sql)
+            # Ejecutar la consulta con los parámetros
+            if params:
+                self.cursor.execute(sql, params)
+            else:
+                self.cursor.execute(sql)
+
             self.conector.commit()
             print(f"\nSe registraron los datos!")
         except Exception as e:
