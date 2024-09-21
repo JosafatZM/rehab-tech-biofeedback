@@ -72,7 +72,7 @@ def modelo_daq():
 
     def registrar(datos):
 
-        datos = json.dumps(data_channel1)
+        datos = json.dumps(datos)
         # Consulta SQL con placeholder (%s)
         query = "INSERT INTO datos_emg (emg) VALUES (%s)"
 
@@ -83,8 +83,18 @@ def modelo_daq():
         except Exception as e:
             print("Error al intentar subir el registro:", e)
 
-        
-        
+    def subir_angulos(ang_hombro, ang_codo):
+        ang_hombro = json.dumps(ang_hombro)
+        ang_codo = json.dumps(ang_codo)
+        # Consulta SQL con placeholder (%s)
+        query = "INSERT INTO datos_angulos (angulos_hombro, angulos_codo) VALUES (%s, %s)"
+
+        # Ejecutar el método con la consulta y el valor del JSON
+        try:
+            base_datos.subir_datos(sql=query, params=(ang_hombro, ang_codo))
+            print("Registro subido con éxito")
+        except Exception as e:
+            print("Error al intentar subir el registro:", e) 
 
 
     cont_SEW_r = 0
@@ -182,7 +192,22 @@ def modelo_daq():
                             tuple(np.multiply(elbow, [640, 480]).astype(int)),
                             cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0), 1,cv2.LINE_AA
                             )
+                
+                if bandera_time == 0:
+                    start_time = time.time()
+                    try:
+                        DAQ_thread_instance = threading.Thread(target= daq_thread_instance)
+                        DAQ_thread_instance.start()
+                        start_daq_time = time.time()
 
+                    except:
+                        print("error en inicializacion del hilo para DAQ")
+                    bandera_time = bandera_time + 1
+
+                # creating an angle-time relation into a dict
+                relacion_ang_time_codo[round(time.time() - start_time, 6)] = angle_SEW_right
+                relacion_ang_time_hombro[round(time.time() - start_time, 6)] = angle_HSE_right
+                
                 # Curl count
                 # Make sure the body is on a correct pose for the states
                 if bandera is not True:
@@ -193,7 +218,7 @@ def modelo_daq():
 
                     
                 # Make sure the arm is extended 
-                if angle_HSE_right <= 5 and angle_HSE_right >= 0:           
+                if angle_HSE_right <= 8 and angle_HSE_right >= 0:           
                     if angle_SEW_right >= 85 and angle_SEW_right <= 105:
                         stage_sew_r = 'Extended'
                 if angle_SEW_right >= 130 and stage_sew_r == 'Extended' and angle_HSE_right < 20:
@@ -201,22 +226,6 @@ def modelo_daq():
                     cont_SEW_r += 1
                 
 
-                if bandera_time == 0:
-                    start_time = time.time()
-                    try:
-                        DAQ_thread_instance = threading.Thread(target= daq_thread_instance)
-                        DAQ_thread_instance.start()
-                        start_daq_time = time.time()
-
-                    except:
-                        print("error en inicializacion del hilo para DAQ")
-                    
-                    print('corriendo tiempo')
-                    bandera_time = bandera_time + 1
-
-                # screating an angle-time relation into a dict
-                relacion_ang_time_codo[round(time.time() - start_time, 3)] = angle_SEW_right
-                relacion_ang_time_hombro[round(time.time() - start_time, 3)] = angle_HSE_right
                 
                 # to know the end of a series
                 if cont_SEW_r == 12:
@@ -231,6 +240,7 @@ def modelo_daq():
                     print(f'fin del tiempo, la serie duro: {serie_time}, Daq time: {daq_time}')
                     print("subiendo datos... \n")
                     registrar(data_channel1)
+                    subir_angulos(ang_hombro=relacion_ang_time_hombro, ang_codo=relacion_ang_time_codo)
                 
                     
                 if bandera_timer is True:
