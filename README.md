@@ -20,13 +20,6 @@ Los datos de los EMG y los valores angulares capturados serán almacenados en un
     * Consultar gráficas de los registros.
     * Obtener archivos de texto (txt) con los datos para un análisis más detallado.
 
-## Planes Futuros:
-* **Mejora de la Interfaz Gráfica:** Agregar funcionalidades adicionales para mejorar la experiencia del usuario y la visualización de datos.
-* **Implementación de Funcionalidades de Exportación:** Desarrollar la capacidad de exportar datos en diferentes formatos para facilitar su uso en otras herramientas y plataformas.
-* **Optimización del Rendimiento:** Realizar ajustes y optimizaciones para mejorar la velocidad y eficiencia del sistema, especialmente en el procesamiento de datos en tiempo real.
-
-**Nota:** Este README está diseñado para un proyecto aún en desarrollo. Se actualizará a medida que el proyecto avance.
-
 ## Recursos adicionales:
 
 * **Documentación de MediaPipe Pose:** [https://google.github.io/mediapipe/solutions/pose.html](https://google.github.io/mediapipe/solutions/pose.html)
