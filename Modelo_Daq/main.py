@@ -122,7 +122,7 @@ def modelo_daq():
     # cap = cv2.VideoCapture(0)
 
     # to use Alan's camera
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
 
     # Setup mediapipe instance 
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
@@ -205,20 +205,21 @@ def modelo_daq():
                     bandera_time = bandera_time + 1
 
                 # creating an angle-time relation into a dict
-                relacion_ang_time_codo[round(time.time() - start_time, 6)] = angle_SEW_right
-                relacion_ang_time_hombro[round(time.time() - start_time, 6)] = angle_HSE_right
+                second = round(time.time() - start_time, 6)
+                relacion_ang_time_codo[second] = angle_SEW_right
+                relacion_ang_time_hombro[second] = angle_HSE_right
                 
                 # Curl count
                 # Make sure the body is on a correct pose for the states
                 if bandera is not True:
-                    if angle_HSE_right >= 0 and angle_HSE_right <= 10:           
+                    if angle_HSE_right >= 0 and angle_HSE_right <= 30:           
                         if angle_SEW_right >= 165 and angle_SEW_right <= 180:
                             bandera = True
                             print('exito,podemos comenzar!')
 
                     
                 # Make sure the arm is extended 
-                if angle_HSE_right <= 8 and angle_HSE_right >= 0:           
+                if angle_HSE_right <= 30 and angle_HSE_right >= 0:           
                     if angle_SEW_right >= 85 and angle_SEW_right <= 105:
                         stage_sew_r = 'Extended'
                 if angle_SEW_right >= 130 and stage_sew_r == 'Extended' and angle_HSE_right < 20:
@@ -228,7 +229,7 @@ def modelo_daq():
 
                 
                 # to know the end of a series
-                if cont_SEW_r == 12:
+                if cont_SEW_r == 13:
                     final_time = time.time()
                     stop_daq_thread()
                     bandera_timer = True
