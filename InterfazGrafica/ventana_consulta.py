@@ -88,14 +88,17 @@ class ConsultFrame(ctk.CTkToplevel):
     def label_button_frame_event(self, item):
         
             print(f"label button frame clicked: {item}")
+            item = item.split(' ')
+        
             import matplotlib.pyplot as plt
-
-            query = f"SELECT emg FROM data_modular.datos_emg WHERE id_sujeto = '60'"
-            query2 = f"SELECT angulos_codo FROM data_modular.datos_angulos WHERE id_sujeto = '60'"
-
+            
+            query0 = f"SELECT id_sujeto FROM data_modular.participantes WHERE nombre = '{item[-2]}'"
+            self.id = base_datos.consulta(query0)
+            query = f"SELECT emg FROM data_modular.datos_emg WHERE id_sujeto = {self.id[0][0]}"
+            query2 = f"SELECT angulos_codo FROM data_modular.datos_angulos WHERE id_sujeto = {self.id[0][0]}"
             self.emg = base_datos.consulta(query)
             self.valores_angulares= base_datos.consulta(query2)
-            
+       
             # tuple to list 
             self.emg = self.emg[0][0]
             self.emg = self.emg[1:-1].split(",")
