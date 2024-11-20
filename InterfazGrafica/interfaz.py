@@ -6,7 +6,10 @@ from PIL import Image
 
 from InterfazGrafica.ventana_consulta import ConsultFrame
 from InterfazGrafica.ventana_registros import RegistFrame
+from InterfazGrafica.ventana_export import ExportFrame
 from Modelo_Daq.modelo import modelo
+
+
 class FuncionesPrograma:
 
     def ventanas_respaldo(self):
@@ -96,7 +99,7 @@ class DataBaseFrame(ctk.CTkFrame):
 
         self.button = ctk.CTkButton(self, text="Consultar", command= ConsultFrame, hover_color="#00090b", fg_color="#081016")
         self.button.grid(row=1, column=0, padx=20, pady=10)
-        self.button = ctk.CTkButton(self, text="Exportar", command= objeto_funciones.ventanas_respaldo , hover_color="#00090b", fg_color="#081016")
+        self.button = ctk.CTkButton(self, text="Exportar", command= ExportFrame , hover_color="#00090b", fg_color="#081016")
         self.button.grid(row=2, column=0, padx=20, pady=10)
 
 class App(ctk.CTk):
