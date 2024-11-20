@@ -54,7 +54,7 @@ def modelo_daq():
 
         try:
             with nidaqmx.Task() as task:
-                task.ai_channels.add_ai_voltage_chan("Dev1/ai0")
+                task.ai_channels.add_ai_voltage_chan("Dev2/ai0")
                 task.timing.cfg_samp_clk_timing(rate=2000.0)
                 
                 while not detener_daq_thread:
@@ -70,24 +70,21 @@ def modelo_daq():
         global detener_daq_thread
         detener_daq_thread = True
 
+
     def registrar(datos):
 
         datos = json.dumps(datos)
-        # Consulta SQL con placeholder (%s)
-        query0 = "SELECT MAX(id_sujeto) FROM data_modular.participantes"
-        id_sujeto = base_datos.consulta(query0)
-        id_sujeto = id_sujeto[0][0]
-    
+        
         query = """
                 INSERT INTO datos_emg (emg, id_sujeto)
-                VALUES (%s, %s)
+                VALUES (%s, (SELECT MAX(id_sujeto) FROM data_modular.participantes));
                 """
 
         # query = "INSERT INTO datos_emg (emg) VALUES (%s)"
 
         # Ejecutar el método con la consulta y el valor del JSON
         try:
-            base_datos.subir_datos(sql=query, params=(datos, id_sujeto))
+            base_datos.subir_datos(sql=query, params=(datos))
             print("Registro subido con éxito")
         except Exception as e:
             print("Error al intentar subir el registro:", e)
@@ -97,16 +94,12 @@ def modelo_daq():
         ang_hombro = json.dumps(ang_hombro)
         ang_codo = json.dumps(ang_codo)
 
-        query0 = "SELECT MAX(id_sujeto) FROM data_modular.participantes"
-        id_sujeto = base_datos.consulta(query0)
-        id_sujeto = id_sujeto[0][0]
-
         # Consulta SQL con placeholder (%s)
-        query = "INSERT INTO datos_angulos (angulos_hombro, angulos_codo, id_sujeto) VALUES (%s, %s, %s)"
+        query = "INSERT INTO datos_angulos (angulos_hombro, angulos_codo, id_sujeto) VALUES (%s, %s, (SELECT MAX(id_sujeto) FROM data_modular.participantes))"
 
         # Ejecutar el método con la consulta y el valor del JSON
         try:
-            base_datos.subir_datos(sql=query, params=(ang_hombro, ang_codo, id_sujeto))
+            base_datos.subir_datos(sql=query, params=(ang_hombro, ang_codo))
             print("Registro subido con éxito")
         except Exception as e:
             print("Error al intentar subir el registro:", e) 
