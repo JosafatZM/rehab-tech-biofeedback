@@ -123,7 +123,7 @@ def modelo():
 
 
             # gives a pop-up of the camera 
-            cv2.imshow('MediaPipe Feed', image)
+            cv2.imshow('Test de Postura', image)
 
             # to close down our video feed 
             if final_ad or cv2.waitKey(10) & 0xFF == ord('E'):
