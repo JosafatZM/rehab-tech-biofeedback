@@ -72,19 +72,15 @@ def modelo_daq():
 
 
     def registrar(datos):
-
         datos = json.dumps(datos)
-        
-        query = """
-                INSERT INTO datos_emg (emg, id_sujeto)
-                VALUES (%s, (SELECT MAX(id_sujeto) FROM data_modular.participantes));
-                """
+        print(type(datos))
+        query = "INSERT INTO datos_emg (emg, id_sujeto) VALUES (%s, (SELECT MAX(id_sujeto) FROM data_modular.participantes))"
 
         # query = "INSERT INTO datos_emg (emg) VALUES (%s)"
 
         # Ejecutar el método con la consulta y el valor del JSON
         try:
-            base_datos.subir_datos(sql=query, params=(datos))
+            base_datos.subir_datos(sql=query, params=(datos,))
             print("Registro subido con éxito")
         except Exception as e:
             print("Error al intentar subir el registro:", e)
@@ -93,6 +89,7 @@ def modelo_daq():
     def subir_angulos(ang_hombro, ang_codo):
         ang_hombro = json.dumps(ang_hombro)
         ang_codo = json.dumps(ang_codo)
+        print(type(ang_codo))
 
         # Consulta SQL con placeholder (%s)
         query = "INSERT INTO datos_angulos (angulos_hombro, angulos_codo, id_sujeto) VALUES (%s, %s, (SELECT MAX(id_sujeto) FROM data_modular.participantes))"
