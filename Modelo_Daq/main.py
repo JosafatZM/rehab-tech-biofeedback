@@ -74,24 +74,39 @@ def modelo_daq():
 
         datos = json.dumps(datos)
         # Consulta SQL con placeholder (%s)
-        query = "INSERT INTO datos_emg (emg) VALUES (%s)"
+        query0 = "SELECT MAX(id_sujeto) FROM data_modular.participantes"
+        id_sujeto = base_datos.consulta(query0)
+        id_sujeto = id_sujeto[0][0]
+    
+        query = """
+                INSERT INTO datos_emg (emg, id_sujeto)
+                VALUES (%s, %s)
+                """
+
+        # query = "INSERT INTO datos_emg (emg) VALUES (%s)"
 
         # Ejecutar el método con la consulta y el valor del JSON
         try:
-            base_datos.subir_datos(sql=query, params=(datos,))
+            base_datos.subir_datos(sql=query, params=(datos, id_sujeto))
             print("Registro subido con éxito")
         except Exception as e:
             print("Error al intentar subir el registro:", e)
 
+
     def subir_angulos(ang_hombro, ang_codo):
         ang_hombro = json.dumps(ang_hombro)
         ang_codo = json.dumps(ang_codo)
+
+        query0 = "SELECT MAX(id_sujeto) FROM data_modular.participantes"
+        id_sujeto = base_datos.consulta(query0)
+        id_sujeto = id_sujeto[0][0]
+
         # Consulta SQL con placeholder (%s)
-        query = "INSERT INTO datos_angulos (angulos_hombro, angulos_codo) VALUES (%s, %s)"
+        query = "INSERT INTO datos_angulos (angulos_hombro, angulos_codo, id_sujeto) VALUES (%s, %s, %s)"
 
         # Ejecutar el método con la consulta y el valor del JSON
         try:
-            base_datos.subir_datos(sql=query, params=(ang_hombro, ang_codo))
+            base_datos.subir_datos(sql=query, params=(ang_hombro, ang_codo, id_sujeto))
             print("Registro subido con éxito")
         except Exception as e:
             print("Error al intentar subir el registro:", e) 
